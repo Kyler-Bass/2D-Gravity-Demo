@@ -1,56 +1,52 @@
 import pygame 
+import time
+import random
 from node import Node
 from point import Point
-from functions import exit_event_check
+from functions import exit_event_check, rebuild, user_input
 
 
 
 def main():
+
+    # window setup
     pygame.init()
+    SCREENSIZE = (512,512)
     window = pygame.display
-    surface = window.set_mode((512,512))
+    screen_surface = window.set_mode(SCREENSIZE)
     window.set_caption("Gravity Demo")
     clock = pygame.time.Clock()
 
-    # setup root node, for testing 
-    root = Node()
-    root.add_child(Point([200,200], 1, 0.01), root)
-    root.add_child(Point([450,450], 1, 0.01), root)
-    root.add_child(Point([250,250], 10, 0.01), root)
-    root.add_child(Point([400,400], 1, 0.01), root)
-    root.add_child(Point([300,300], 1, 0.01), root)
-    root.add_child(Point([350,350], 1, 0.01), root)
+    # tree setup
+    GRAVITY, mass, start_ct, color = user_input()
+    root = Node(color)
 
+    #GRAVITY = 0.01
+    #mass = 1
+
+    # add starting points
+    for i in range(start_ct):
+        x = random.randint(0, SCREENSIZE[0])
+        y = random.randint(0, SCREENSIZE[1])
+        root.add_child(Point([x,y], mass, GRAVITY), root)
 
     while True:
         if exit_event_check():
             return 0
         
-        surface.fill((0,0,0))
-        root.set_mass()
-        root.set_center_point()
+        # user data
+        mouse_pos = pygame.mouse.get_pos()
+        clicked = pygame.mouse.get_pressed()
 
-        center_masses = []
-        center_points = []
-        for node in root.children:
-            center_masses.append(node.total_mass)
-            center_points.append(node.center_point)
-        root.move_all(center_masses, center_points)
-        root.draw(surface)
-        root.remove_offscreen_points(root.size, root)
-        #print(center_masses)
-        #print(center_points)
+        # tree update and drawing 
+        root.update(mouse_pos, clicked, mass, GRAVITY, time.time())
+        root.draw(screen_surface)
+        root = rebuild(root)
+        print(len(root.points))
 
-        
-        points = root.get_points()
-        root = Node()
-        for point in points:
-            root.add_child(point, root)
-
-
-
+        # update window and limit fps
         window.update()
-        clock.tick(40)
+        clock.tick(60)
 
 if __name__ == "__main__":
     main()
