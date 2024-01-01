@@ -8,52 +8,51 @@ def exit_event_check():
         if event.type == pygame.QUIT:
             return True
 
-def rebuild(node):
-    """Rebuild the tree to reflect changes to point positions"""
-    points = node.points
-    root = Node(node.color)
-    for point in points:
-        root.add_child(point, root)
-    return root 
 
 def user_input(skip=False):
+    colors = {
+        'white': pygame.color.Color((255,255,255)),
+        'black': pygame.color.Color((0,0,0)),
+        'red': pygame.color.Color((255,0,0)),
+        'green': pygame.color.Color((0,255,0)),
+        'blue': pygame.color.Color((0,0,255))
+    }
+
     if not skip:
-        print("\nWelcome to my demo. This demo is of the effects of gravity on objects.")
-        print("You can give a starting amount of small objects and also click on the screen at any time to spawn one in.")
+        print("\nWelcome to this 2D gravity demonstration.")
+        print("You may click on the screen at any point in time to create an object.")
         print("You will be asked to input the parameters used to show this demonstration.")
         print("You do not have to fill in all of them, or any of them if you don't want to, they all have defaults.")
-        print("Suggestion: \n -Gravitational Constant: no lower than 0.001\n")
+        print("If you do not want to fill one in, simple leave it blank and press ENTER")
     try:
-        grav = float(input("Gravitational Constant: "))
-        obj_mass = float(input("Object Mass: "))
-        obj_ct = int(input("Amount of Starting Smaller Objects: "))
-        obj_color = input("Small Object Color (red, green, blue, black, white or (244,45,12)): ")
+        grav = input("\nGravitational Constant: ")
+        obj_mass = input("Object Mass: ")
+        obj_ct = input("Amount of Starting Smaller Objects: ")
+        obj_color = input("Small Object Color (red, green, blue, black, white or (0-255,0-255,0-255)): ")
+        if grav == "":
+            grav = 0.01
+        else:
+            grav = float(grav)
+        if obj_mass == "":
+            obj_mass = 1
+        else:
+            obj_mass = float(obj_mass)
+        if obj_ct == "":
+            obj_ct = 0
+        else:
+            obj_ct = int(obj_ct)
+        if '(' in obj_color:
+            color = tuple(int(i) for i in obj_color[1:-1].split(','))
+            color = pygame.color.Color(color)
+        elif obj_color == "":
+            color = color = pygame.color.Color((255,255,255))
+        else:
+            color = colors[obj_color.lower()]
+            if color == 0:
+                raise(ValueError)
     except:
         print("\nThere was an error with your input, please try again.")
         return user_input(skip=True)
 
-    colors = {
-        'white': (255,255,255),
-        'black': (0,0,0),
-        'red': (255,0,0),
-        'green': (0,255,0),
-        'blue': (0,0,255),
-        'White': (255,255,255),
-        'Black': (0,0,0),
-        'Red': (255,0,0),
-        'Green': (0,255,0),
-        'Blue': (0,0,255)
-    }
-
-    if '(' in obj_color:
-        try: 
-            color = tuple(int(i) for i in obj_color[1:-1].split(','))
-            color = pygame.color.Color(color)
-        except:
-            color = pygame.color.Color((255,0,0))
-    else:
-        color = pygame.color.Color(colors[obj_color])
-        if color == 0:
-            color = pygame.color.Color((255,0,0))
 
     return grav, obj_mass, obj_ct, color

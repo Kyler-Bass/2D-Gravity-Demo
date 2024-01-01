@@ -11,6 +11,9 @@ class Node:
             # start with root node and 4 children nodes 
             self.children = [Node(self.color, 0, self, self.depth), Node(self.color, 1, self, self.depth), Node(self.color, 2, self, self.depth), Node(self.color, 3, self, self.depth)]
             self.points = []
+            self.collisions = []
+            self.explosion_outside_points = [ [-2,-2], [-1.5,0], [2,-2], [0,1.5], [2,2], [1.5,0], [-2,2], [0,-1.5] ]
+            self.explosion_inside_points = [ [-1.5,0], [0,1.5], [1.5,0], [0,-1.5] ]
         else:
             self.color = color
             self.size = parent.size / 2
@@ -27,6 +30,7 @@ class Node:
 
         self.quadrant = quadrant
         self.center_point = []
+        self.point_moments = {} 
         self.total_mass = 0
         self.point_ct = 0
         self.last_add = 0
@@ -62,9 +66,11 @@ class Node:
         """
         quadrant = (point.pos[0] >= self.top_left[0] + self.size/2) * 1 + (point.pos[1] >= self.top_left[1] + self.size/2) * 2
 
-        # Add point to list of points in root node 
+        # Add point to list of points in root node or set point's quadrant 
         if self.depth == 0:
             self.points.append(point)
+        elif self.depth == 1:
+            point.quadrant = self.quadrant
 
         # Determine collisions and how to place point in the tree
         if self.children[quadrant] == 0:
@@ -83,12 +89,28 @@ class Node:
         elif isinstance(self.children[quadrant], list):
             self.children[quadrant].append(point)
 
-    def draw(self, surface):
+    def draw(self, surface:pygame.surface.Surface):
         """Draws the current tree to the screen"""
 
         if self.depth == 0:
             # fill screen with black to remove last frame 
             surface.fill((0,0,0))
+            i = 0
+            for collision in self.collisions:
+                inside_points = []
+                outside_points = []
+
+                for i in range(len(self.explosion_outside_points)):
+                    outside_points.append([self.explosion_outside_points[i][0] + collision[0], self.explosion_outside_points[i][1] + collision[1]])
+                
+                for i in range(len(self.explosion_inside_points)):
+                    inside_points.append([self.explosion_inside_points[i][0] + collision[0], self.explosion_inside_points[i][1] + collision[1]])
+                
+                pygame.draw.polygon(surface, (255,0,0), outside_points)
+                pygame.draw.polygon(surface, (255,255,0), inside_points)
+                collision[2] -= 1
+                if collision[2] == 0:
+                    self.collisions.remove(collision)
 
         # draw current frame 
         for child in self.children:
@@ -96,6 +118,8 @@ class Node:
                 child.draw(surface)
             elif isinstance(child, Point):
                 pygame.draw.circle(surface, color=self.color, center=child.pos, radius=1)
+
+        
         
     def set_mass(self):
         """Set the total mass of every node in the tree"""
@@ -139,30 +163,27 @@ class Node:
                     masses.append(point.mass)
                     point_ct += 1
         if point_ct > 0:
-            total_mass = sum(masses)
             x_moments = [m * x for m,x in zip(masses,xs)]
             y_moments = [m * y for m,y in zip(masses,ys)]
-            center_x = sum(x_moments) / total_mass
-            center_y = sum(y_moments) / total_mass
+            self.total_x_moment = sum(x_moments)
+            self.total_y_moment = sum(y_moments)
+            center_x = self.total_x_moment / self.total_mass
+            center_y = self.total_y_moment / self.total_mass
             self.center_point = [center_x, center_y]
             self.point_ct = point_ct
             
 
-    def move_all(self, center_masses, center_points, quadrant=None):
+    def move_all(self, nodes:list):
         """Move all points that are children of this node"""
 
-        if self.depth == 0:
-            for child in self.children:
-                child.move_all(center_masses, center_points, child.quadrant)
-        else:
-            for child in self.children:
-                if isinstance(child, Node):
-                    child.move_all(center_masses, center_points, quadrant)
-                elif isinstance(child, Point):
-                    child.move(center_masses, center_points, quadrant)
-                elif isinstance(child, list):
-                    for point in child:
-                        point.move(center_masses, center_points, quadrant)
+        for child in self.children:
+            if isinstance(child, Node):
+                child.move_all(nodes)
+            elif isinstance(child, Point):
+                child.move(nodes)
+            elif isinstance(child, list):
+                for point in child:
+                    point.move(nodes)
 
     def remove_offscreen_points(self, root_size, root):
         """Remove points that are offscreen from the tree"""
@@ -186,11 +207,13 @@ class Node:
 
         self.set_mass()
         self.set_center_point()
-        center_masses = []
-        center_points = []
-        for node in self.children:
-            center_masses.append(node.total_mass)
-            center_points.append(node.center_point)
-        self.move_all(center_masses, center_points)
+        self.move_all(self.children)
         self.remove_offscreen_points(self.size, self)
-        
+
+    def rebuild(self):
+        """Rebuild the tree to reflect changes to the positions of points"""
+        temp = self.points
+        self.points = []
+        self.children = [Node(self.color, 0, self, self.depth), Node(self.color, 1, self, self.depth), Node(self.color, 2, self, self.depth), Node(self.color, 3, self, self.depth)]
+        for point in temp:
+            self.add_child(point, self)

@@ -3,12 +3,15 @@ import time
 import random
 from node import Node
 from point import Point
-from functions import exit_event_check, rebuild, user_input
+from functions import exit_event_check, user_input
 
 
 
 def main():
 
+    # user input 
+    GRAVITY, mass, start_ct, color = user_input()
+    
     # window setup
     pygame.init()
     SCREENSIZE = (512,512)
@@ -18,11 +21,7 @@ def main():
     clock = pygame.time.Clock()
 
     # tree setup
-    GRAVITY, mass, start_ct, color = user_input()
     root = Node(color)
-
-    #GRAVITY = 0.01
-    #mass = 1
 
     # add starting points
     for i in range(start_ct):
@@ -41,8 +40,7 @@ def main():
         # tree update and drawing 
         root.update(mouse_pos, clicked, mass, GRAVITY, time.time())
         root.draw(screen_surface)
-        root = rebuild(root)
-        print(len(root.points))
+        root.rebuild()
 
         # update window and limit fps
         window.update()
