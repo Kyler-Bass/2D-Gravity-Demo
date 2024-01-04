@@ -1,5 +1,6 @@
 import pygame
-from node import Node
+import tkinter as tk
+from tkinter import ttk
 
 def exit_event_check():
     """Check if user clicked the (x) exit button, and what to do when they clicked it"""
@@ -8,27 +9,13 @@ def exit_event_check():
         if event.type == pygame.QUIT:
             return True
 
+def test_input(window, tv1, tv2, tv3, tv4):
+    grav = tv1.get()
+    obj_mass = tv2.get()
+    obj_ct = tv3.get()
+    obj_color = tv4.get()
 
-def user_input(skip=False):
-    colors = {
-        'white': pygame.color.Color((255,255,255)),
-        'black': pygame.color.Color((0,0,0)),
-        'red': pygame.color.Color((255,0,0)),
-        'green': pygame.color.Color((0,255,0)),
-        'blue': pygame.color.Color((0,0,255))
-    }
-
-    if not skip:
-        print("\nWelcome to this 2D gravity demonstration.")
-        print("You may click on the screen at any point in time to create an object.")
-        print("You will be asked to input the parameters used to show this demonstration.")
-        print("You do not have to fill in all of them, or any of them if you don't want to, they all have defaults.")
-        print("If you do not want to fill one in, simple leave it blank and press ENTER")
     try:
-        grav = input("\nGravitational Constant: ")
-        obj_mass = input("Object Mass: ")
-        obj_ct = input("Amount of Starting Smaller Objects: ")
-        obj_color = input("Small Object Color (red, green, blue, black, white or (0-255,0-255,0-255)): ")
         if grav == "":
             grav = 0.01
         else:
@@ -43,16 +30,64 @@ def user_input(skip=False):
             obj_ct = int(obj_ct)
         if '(' in obj_color:
             color = tuple(int(i) for i in obj_color[1:-1].split(','))
-            color = pygame.color.Color(color)
+            for num in color:
+                if num > 255: 
+                    raise ValueError
         elif obj_color == "":
-            color = color = pygame.color.Color((255,255,255))
-        else:
-            color = colors[obj_color.lower()]
-            if color == 0:
-                raise(ValueError)
+            color = "white"
+
+        # close window and set variables 
+        window.destroy()
+        tv1.set(grav)
+        tv2.set(obj_mass)
+        tv3.set(obj_ct)
+        tv4.set(color)
     except:
-        print("\nThere was an error with your input, please try again.")
-        return user_input(skip=True)
+        # put an error message on screen and reset inputs 
+        tv1.set("")
+        tv2.set("")
+        tv3.set("")
+        tv4.set("")
+        error_msg = ttk.Label(window, text="Error with input, try again", background="red")
+        error_msg.grid(row=4, column=0)
+        
+def input_form():
+    """Opens a tkinter window to get user input"""
+    # window setup
+    window = tk.Tk()
+    window.geometry("375x110")
+    window.title("Parameters Form")
+    window.configure(bg="light blue")
+
+    # input setup
+    tv1 = tk.StringVar()
+    prompt1 = ttk.Label(window, text="Gravity Constant (Below 0.1): ", background="light blue")
+    prompt1.grid(row=0, column=0, sticky="W")
+    entry1 = ttk.Entry(window, width=20, textvariable=tv1)
+    entry1.grid(row=0, column=1)
+
+    tv2 = tk.StringVar()
+    prompt2 = ttk.Label(window, text="Mass of Objects (Any Positive Number): ", background="light blue")
+    prompt2.grid(row=1, column=0, sticky="W")
+    entry2 = ttk.Entry(window, width=20, textvariable=tv2)
+    entry2.grid(row=1, column=1)
+
+    tv3 = tk.StringVar()
+    prompt3 = ttk.Label(window, text="Number of Starting Objects (Positive Integer): ", background="light blue")
+    prompt3.grid(row=2, column=0, sticky="W")
+    entry3 = ttk.Entry(window, width=20, textvariable=tv3)
+    entry3.grid(row=2, column=1)
+
+    tv4 = tk.StringVar()
+    prompt4 = ttk.Label(window, text="Object Color (Word or (0-255,0-255,0-255)): ", background="light blue")
+    prompt4.grid(row=3, column=0, sticky="W")
+    entry4 = ttk.Entry(window, width=20, textvariable=tv4)
+    entry4.grid(row=3, column=1)
 
 
-    return grav, obj_mass, obj_ct, color
+    submit = ttk.Button(window, command= lambda: test_input(window, tv1, tv2, tv3, tv4), text="Submit")
+    submit.grid(row=4, column=1)
+    
+    window.mainloop()
+
+    return [tv1.get(),tv2.get(),tv3.get(),tv4.get()]

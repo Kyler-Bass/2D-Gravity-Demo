@@ -3,14 +3,21 @@ import time
 import random
 from node import Node
 from point import Point
-from functions import exit_event_check, user_input
-
-
+from functions import exit_event_check, input_form
 
 def main():
 
     # user input 
-    GRAVITY, mass, start_ct, color = user_input()
+    parameters = input_form()
+    GRAVITY, mass = map(lambda x: float(x), parameters[:2])
+    start_ct = int(parameters[2])
+    try: 
+        color = [int(x) for x in parameters[3][1:-1].split(",")]
+        color = pygame.color.Color(color)
+    except:
+        color = parameters[3]
+
+    print(color)
     
     # window setup
     pygame.init()
